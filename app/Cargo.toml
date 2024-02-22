@@ -9,6 +9,7 @@ edition = "2021"
 bevy = { workspace = true, features = ["jpeg", "file_watcher"] }
 bevy_cameras = { path = "../plugins/bevy_cameras" }
 bevy_asset_loader = { workspace = true }
-bevy_ribbon = { path = "../plugins/bevy_ribbon"}
+bevy_protein = { path = "../plugins/bevy_protein" }
 pdbtbx = { workspace = true }
 bevy_panorbit_camera = "0.14"
+bevy_mod_picking = { workspace = true }

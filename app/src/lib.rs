@@ -22,10 +22,13 @@ use bevy_cameras::{
     pan_orbit_camera::{OrbitCameraController, OrbitCameraControllerPlugin},
     CameraMode,
 };
-use bevy_ribbon::{
-    pdb_asset_loader::ProteinAsset,
+use bevy_mod_picking::{
+    debug::DebugPickingPlugin, prelude::low_latency_window_plugin, DefaultPickingPlugins,
+};
+use bevy_protein::{
     polypeptide_plane::{PolypeptidePlane, PolypeptidePlaneError},
     polypeptide_planes::PolypeptidePlanes,
+    protein_asset_loader::ProteinAsset,
     ProteinPlugin,
 };
 use light_rig::LightRigPlugin;
@@ -38,7 +41,7 @@ use pdbtbx::*;
 use state::camera::CameraModeImpl;
 
 #[derive(AssetCollection, Resource)]
-struct PdbAssets {
+struct ProteinAssetsMap {
     #[asset(path = "pdbs/AF-A0A7K5PA91-F1-model_v4.cif")]
     primary_protein: Handle<ProteinAsset>,
 }
@@ -58,10 +61,15 @@ pub struct AppPlugin;
 impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            DefaultPlugins.set(AssetPlugin {
-                watch_for_changes_override: Some(true),
-                ..Default::default()
-            }),
+            DefaultPlugins
+                .set(AssetPlugin {
+                    watch_for_changes_override: Some(true),
+                    ..Default::default()
+                })
+                .set(low_latency_window_plugin()),
+            DefaultPickingPlugins
+                .build()
+                .disable::<DebugPickingPlugin>(),
             OrbitCameraControllerPlugin::<CameraModeImpl>::default(),
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin::default(),
@@ -74,7 +82,7 @@ impl Plugin for AppPlugin {
         .add_loading_state(
             LoadingState::new(AppState::AssetLoading)
                 .continue_to_state(AppState::Main)
-                .load_collection::<PdbAssets>(),
+                .load_collection::<ProteinAssetsMap>(),
         )
         .add_systems(OnEnter(AppState::Main), (Self::setup_camera,).chain());
     }
@@ -83,12 +91,8 @@ impl Plugin for AppPlugin {
 impl AppPlugin {
     fn setup_camera(mut commands: Commands) {
         commands.spawn((
-            Camera3dBundle {
-                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-                // projection: Projection::Orthographic(OrthographicProjection::default()),
-                ..default()
-            },
-            OrbitCameraController::default(),
+            Camera3dBundle { ..default() },
+            OrbitCameraController::new(100., Vec3::new(-2.6, -8.3, 9.0)),
             MainCamera,
         ));
     }
