@@ -1,3 +1,4 @@
+pub mod light_rig;
 pub mod material;
 pub mod state;
 
@@ -16,24 +17,37 @@ use bevy::{
     },
     window::PresentMode,
 };
+use bevy_asset_loader::prelude::*;
 use bevy_cameras::{
     pan_orbit_camera::{OrbitCameraController, OrbitCameraControllerPlugin},
     CameraMode,
 };
+use bevy_ribbon::{
+    pdb_asset_loader::ProteinAsset,
+    polypeptide_plane::{PolypeptidePlane, PolypeptidePlaneError},
+    polypeptide_planes::PolypeptidePlanes,
+    ProteinPlugin,
+};
+use light_rig::LightRigPlugin;
 use material::{
     custom_material::CustomMaterial,
     extended_marerial::MyExtension,
     game_of_life::{GameOfLifeComputePlugin, GameOfLifeImage},
 };
-
+use pdbtbx::*;
 use state::camera::CameraModeImpl;
+
+#[derive(AssetCollection, Resource)]
+struct PdbAssets {
+    #[asset(path = "pdbs/AF-A0A7K5PA91-F1-model_v4.cif")]
+    primary_protein: Handle<ProteinAsset>,
+}
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 enum AppState {
     #[default]
-    Loading,
-    Menu,
-    Canvas3d,
+    AssetLoading,
+    Main,
 }
 
 #[derive(Component)]
@@ -49,108 +63,34 @@ impl Plugin for AppPlugin {
                 ..Default::default()
             }),
             OrbitCameraControllerPlugin::<CameraModeImpl>::default(),
-            GameOfLifeComputePlugin,
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin::default(),
             MaterialPlugin::<CustomMaterial>::default(),
             MaterialPlugin::<ExtendedMaterial<StandardMaterial, MyExtension>>::default(),
+            ProteinPlugin,
+            LightRigPlugin,
         ))
         .init_state::<AppState>()
-        .add_systems(Startup, Self::setup)
-        .add_systems(Update, rotate_things);
+        .add_loading_state(
+            LoadingState::new(AppState::AssetLoading)
+                .continue_to_state(AppState::Main)
+                .load_collection::<PdbAssets>(),
+        )
+        .add_systems(OnEnter(AppState::Main), (Self::setup_camera,).chain());
     }
 }
 
 impl AppPlugin {
-    fn setup(
-        mut commands: Commands,
-        mut meshes: ResMut<Assets<Mesh>>,
-        mut images: ResMut<Assets<Image>>,
-        mut custom_materials: ResMut<Assets<CustomMaterial>>,
-        mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, MyExtension>>>,
-        asset_server: Res<AssetServer>,
-    ) {
+    fn setup_camera(mut commands: Commands) {
         commands.spawn((
             Camera3dBundle {
-                transform: Transform::from_xyz(0., 2., 0.).looking_at(Vec3::ZERO, Vec3::Y),
+                transform: Transform::from_xyz(10., 10., 10.).looking_at(Vec3::ZERO, Vec3::Y),
                 // projection: Projection::Orthographic(OrthographicProjection::default()),
                 ..default()
             },
             OrbitCameraController::default(),
             MainCamera,
         ));
-
-        const SIZE: (u32, u32) = (1280, 720);
-
-        let mut image = Image::new_fill(
-            Extent3d {
-                width: SIZE.0,
-                height: SIZE.1,
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            &[0, 0, 0, 255],
-            TextureFormat::Rgba8Unorm,
-            RenderAssetUsages::RENDER_WORLD,
-        );
-        image.texture_descriptor.usage = TextureUsages::COPY_DST
-            | TextureUsages::STORAGE_BINDING
-            | TextureUsages::TEXTURE_BINDING;
-
-        let image = images.add(image);
-
-        // plane
-        commands.spawn((MaterialMeshBundle {
-            mesh: meshes.add(Plane3d::default()),
-            transform: Transform::from_xyz(0.0, 0., 0.0),
-            material: custom_materials.add(CustomMaterial {
-                color: Color::RED,
-                game_of_life_texture: Some(image.clone()),
-                albedo_texture: Some(asset_server.load("images\\cell\\Albedo.png")),
-                ao_texture: Some(asset_server.load("images\\cell\\AO.png")),
-                normal_texture: Some(asset_server.load("images\\cell\\normal.png")),
-
-                alpha_mode: AlphaMode::Blend,
-            }),
-            ..default()
-        },));
-
-        commands.insert_resource(GameOfLifeImage { texture: image });
-
-        // light
-
-        // commands.spawn((
-        //     DirectionalLightBundle {
-        //         transform: Transform::from_xyz(0., -1., 0.).looking_at(Vec3::ZERO, Vec3::Y),
-        //         ..default()
-        //     },
-        //     Rotate,
-        // ));
-
-        // sphere
-        // commands.spawn(MaterialMeshBundle {
-        //     mesh: meshes.add(Plane3d::default()),
-        //     transform: Transform::from_xyz(0.0, 0., 0.0),
-
-        //     material: extended_materials.add(ExtendedMaterial {
-        //         base: StandardMaterial {
-        //             double_sided: true,
-
-        //             base_color_texture: Some(asset_server.load("images\\cell\\Albedo.png")),
-        //             normal_map_texture: Some(asset_server.load("images\\cell\\normal.png")),
-        //             // can be used in forward or deferred mode.
-        //             opaque_render_method: bevy::pbr::OpaqueRendererMethod::Auto,
-        //             // in deferred mode, only the PbrInput can be modified (uvs, color and other material properties),
-        //             // in forward mode, the output can also be modified after lighting is applied.
-        //             // see the fragment shader `extended_material.wgsl` for more info.
-        //             // Note: to run in deferred mode, you must also add a `DeferredPrepass` component to the camera and either
-        //             // change the above to `OpaqueRendererMethod::Deferred` or add the `DefaultOpaqueRendererMethod` resource.
-        //             ..Default::default()
-        //         },
-        //         extension: MyExtension { quantize_steps: 3 },
-        //     }),
-        //     ..default()
-        // });
     }
 }
 
@@ -168,4 +108,20 @@ fn cleanup<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Comma
     for entity in &to_despawn {
         commands.entity(entity).despawn_recursive();
     }
+}
+
+fn print_resources(world: &World) {
+    let components = world.components();
+
+    let mut r: Vec<_> = world
+        .storages()
+        .resources
+        .iter()
+        .map(|(id, _)| components.get_info(id).unwrap())
+        .map(|info| info.name())
+        .collect();
+
+    // sort list alphebetically
+    r.sort();
+    r.iter().for_each(|name| info!("{}", name));
 }

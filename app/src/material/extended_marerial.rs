@@ -14,10 +14,10 @@ pub struct MyExtension {
 
 impl MaterialExtension for MyExtension {
     fn fragment_shader() -> ShaderRef {
-        "shaders\\extended_material.wgsl".into()
+        "shaders/extended_material.wgsl".into()
     }
 
     fn deferred_fragment_shader() -> ShaderRef {
-        "shaders\\extended_material.wgsl".into()
+        "shaders/extended_material.wgsl".into()
     }
 }

@@ -29,7 +29,7 @@ pub struct CustomMaterial {
 /// You only need to implement functions for features that need non-default behavior. See the Material api docs for details!
 impl Material for CustomMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shaders\\custom_material.wgsl".into()
+        "shaders/custom_material.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
