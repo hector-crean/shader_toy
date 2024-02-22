@@ -3,9 +3,8 @@
 
 */
 use bevy::math::{cubic_splines::*, vec2, Vec3};
+use bevy_geometry::TangentSpace;
 use pdbtbx::*;
-
-use crate::tangent_space::TangentSpace;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct PolypeptidePlane {
@@ -23,13 +22,13 @@ impl PolypeptidePlane {
         position: Vec3,
         normal: Vec3,
         tangent: Vec3,
-        bitangent: Vec3,
+        binormal: Vec3,
     ) -> Self {
         Self {
             r1,
             r2,
             r3,
-            tangent_space: TangentSpace::new(position, normal, tangent, bitangent),
+            tangent_space: TangentSpace::new(position, normal, tangent, binormal),
         }
     }
 }
@@ -74,7 +73,7 @@ impl TryFrom<(Residue, Residue, Residue)> for PolypeptidePlane {
         //normal
         let c = a.cross(b).normalize();
 
-        //bitangent
+        //binormal
         let d = c.cross(a).normalize();
 
         //plane_centre

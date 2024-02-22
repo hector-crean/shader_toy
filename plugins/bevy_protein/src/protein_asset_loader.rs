@@ -19,7 +19,7 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use pdbtbx::{open_mmcif_raw, open_pdb_raw, PDBError, PDB};
+use pdbtbx::{open_mmcif_raw, open_pdb_raw, PDBError, TransformationMatrix, PDB};
 
 use crate::polypeptide_plane::PolypeptidePlane;
 use crate::polypeptide_planes::PolypeptidePlanes;
@@ -70,8 +70,18 @@ impl AssetLoader for ProteinAssetLoader {
 
             let str = from_utf8(&bytes)?;
 
-            let (pdb, _) = open_mmcif_raw(str, pdbtbx::StrictnessLevel::Loose)
+            let (mut pdb, _) = open_mmcif_raw(str, pdbtbx::StrictnessLevel::Loose)
                 .map_err(|error_log| ProteinAssetLoaderError::PdbError { error_log })?;
+
+            let ((x1, y1, z1), (x2, y2, z2)) = pdb.bounding_box();
+
+            let centre = (0.5 * (x1 + x2), 0.5 * (y1 + y2), 0.5 * (z1 + z2));
+
+            info!("centre of protein at: {:?}", &centre);
+
+            pdb.apply_transformation(&TransformationMatrix::translation(
+                -centre.0, -centre.1, -centre.2,
+            ));
 
             let mut polypeptide_planes = Vec::<PolypeptidePlane>::new();
 
@@ -84,7 +94,7 @@ impl AssetLoader for ProteinAssetLoader {
                     [r1, r2, r3] => {
                         match PolypeptidePlane::try_from((r1.clone(), r2.clone(), r3.clone())) {
                             Ok(polypeptide_plane) => {
-                                info!("{:?}", &polypeptide_plane);
+                                // info!("{:?}", &polypeptide_plane);
                                 polypeptide_planes.push(polypeptide_plane);
                             }
                             Err(err) => {

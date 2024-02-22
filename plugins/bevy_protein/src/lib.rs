@@ -1,7 +1,6 @@
-pub mod pdb_asset_loader;
 pub mod polypeptide_plane;
 pub mod polypeptide_planes;
-pub mod tangent_space;
+pub mod protein_asset_loader;
 
 use bevy::{
     app::{Plugin, Startup, Update},
@@ -22,8 +21,9 @@ use bevy::{
     transform::components::Transform,
     utils::default,
 };
-use pdb_asset_loader::{ProteinAsset, ProteinAssetLoader};
+use bevy_geometry::primitives::ribbon::Ribbon;
 use polypeptide_planes::PolypeptidePlanes;
+use protein_asset_loader::{ProteinAsset, ProteinAssetLoader};
 
 pub struct ProteinPlugin;
 
@@ -60,9 +60,10 @@ impl ProteinPlugin {
                         Some(ProteinAsset {
                             polypeptide_planes, ..
                         }) => {
-                            let ribbon_mesh = polypeptide_planes.create_ribbon_mesh(2.);
+                            let discrete_geodesic = polypeptide_planes.discrete_tangent_spaces();
+                            let ribbon = Ribbon::new(discrete_geodesic, 1., 1., 10000);
 
-                            let ribbon_mesh_handle = meshes.add(ribbon_mesh);
+                            let ribbon_mesh_handle = meshes.add(ribbon);
 
                             // Render the mesh with the custom texture using a PbrBundle, add the marker.
                             commands.spawn((PbrBundle {
