@@ -8,7 +8,6 @@ use bevy::{
     prelude::*,
     render::camera::Camera,
 };
-
 use std::ops::RangeInclusive;
 
 #[derive(Default)]
@@ -92,36 +91,9 @@ impl OrbitCameraController {
     }
 }
 
-impl CameraController for OrbitCameraController {
-    fn update_camera_transform_system(
-        mut query: Query<
-            (&OrbitCameraController, &mut Transform),
-            (Changed<OrbitCameraController>, With<Camera>),
-        >,
-    ) {
-        for (camera, mut transform) in query.iter_mut() {
-            if camera.enabled {
-                let rot = Quat::from_axis_angle(Vec3::Y, camera.x)
-                    * Quat::from_axis_angle(-Vec3::X, camera.y);
-                transform.translation = (rot * Vec3::Y) * camera.distance + camera.center;
-                transform.look_at(camera.center, Vec3::Y);
-            }
-        }
-    }
-}
-
 impl<T: CameraMode> OrbitCameraControllerPlugin<T> {
     pub fn init_camera_state(mut commands: Commands) {
         commands.init_resource::<T>()
-    }
-
-    pub fn update_camera_transform_system(
-        query: Query<
-            (&OrbitCameraController, &mut Transform),
-            (Changed<OrbitCameraController>, With<Camera>),
-        >,
-    ) {
-        OrbitCameraController::update_camera_transform_system(query);
     }
 
     pub fn emit_motion_events(
@@ -147,28 +119,12 @@ impl<T: CameraMode> OrbitCameraControllerPlugin<T> {
         }
     }
 
-    // pub fn emit_camera_motion_events(
-    //     // Input
-    //     mut input_presses: EventReader<pointer::InputPress>,
-    //     mut input_moves: EventReader<pointer::InputMove>,
-    //     // Output
-    //     mut camera_cmd_events: EventWriter<OrbitCameraControllerEvents>,
-    // ) {
-    //     let mut delta = Vec2::ZERO;
-
-    //     for input_move in input_moves.iter() {
-    //         delta += input_move.;
-
-    //         // camera_cmd_events.send(OrbitCameraControllerEvents::Orbit(delta))
-    //     }
-    // }
-
     pub fn consume_pan_and_orbit_events(
         time: Res<Time>,
         mut events: EventReader<OrbitCameraControllerEvents>,
-        mut query: Query<(&mut OrbitCameraController, &mut Transform, &mut Camera)>,
+        mut query: Query<(&mut OrbitCameraController, &mut Transform)>,
     ) {
-        for (mut camera, transform, _) in query.iter_mut() {
+        for (mut camera, transform) in query.iter_mut() {
             if !camera.enabled {
                 continue;
             }
@@ -221,7 +177,7 @@ impl<T: CameraMode> OrbitCameraControllerPlugin<T> {
     }
 
     pub fn consume_zoom_events(
-        mut query: Query<&mut OrbitCameraController, With<Camera>>,
+        mut query: Query<&mut OrbitCameraController>,
         mut events: EventReader<OrbitCameraControllerEvents>,
     ) {
         for mut camera in query.iter_mut() {
@@ -232,6 +188,19 @@ impl<T: CameraMode> OrbitCameraControllerPlugin<T> {
                         camera.distance = f32::clamp(camera.distance, 0.1, f32::MAX)
                     }
                 }
+            }
+        }
+    }
+
+    pub fn update_camera_transform_system(
+        mut query: Query<(&OrbitCameraController, &mut Transform)>,
+    ) {
+        for (camera, mut transform) in query.iter_mut() {
+            if camera.enabled {
+                let rot = Quat::from_axis_angle(Vec3::Y, camera.x)
+                    * Quat::from_axis_angle(-Vec3::X, camera.y);
+                transform.translation = (rot * Vec3::Y) * camera.distance + camera.center;
+                transform.look_at(camera.center, Vec3::Y);
             }
         }
     }
