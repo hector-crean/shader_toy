@@ -1,5 +1,5 @@
 use crate::{ContinousGeodesic, F32Range, TangentSpace};
-use bevy::log::{self, info};
+use bevy::log::{info};
 use bevy::prelude::CubicGenerator;
 use bevy::{
     math::{
@@ -178,7 +178,7 @@ impl RibbonMeshBuilder {
 
         let mut positions = Vec::<Vec3>::new();
         let mut normals = Vec::<Vec3>::new();
-        let mut uvs = Vec::<Vec3>::new();
+        let uvs = Vec::<Vec3>::new();
         let mut indices = Vec::<u32>::new();
 
         let dt = geodesic_length / (self.segments as f32);

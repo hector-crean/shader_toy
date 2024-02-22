@@ -3,7 +3,6 @@ use bevy::{
     input::{
         keyboard::KeyboardInput,
         mouse::{
-            MouseMotion,
             MouseScrollUnit::{Line, Pixel},
             MouseWheel,
         },
@@ -12,10 +11,8 @@ use bevy::{
     render::camera::Camera,
 };
 use bevy_mod_picking::{
-    debug::DebugPickingPlugin,
-    pointer::{self, InputMove, InputPress},
-    prelude::{Click, Down, Drag, DragEnd, DragStart, Pointer, PointerButton, Up},
-    DefaultPickingPlugins,
+    pointer::{InputMove},
+    prelude::{Click, Down, Drag, DragEnd, DragStart, Pointer, Up},
 };
 use std::ops::RangeInclusive;
 

@@ -1,15 +1,14 @@
-use std::convert::Infallible;
-use std::io::Cursor;
+
+
 use std::str::{from_utf8, Utf8Error};
 
-use bevy::asset::saver::{AssetSaver, SavedAsset};
-use bevy::asset::transformer::{AssetTransformer, TransformedAsset};
+use bevy::asset::saver::{AssetSaver};
+use bevy::asset::transformer::{AssetTransformer};
 use bevy::asset::AsyncWriteExt;
 use bevy::utils::thiserror;
 use bevy::{
     asset::{
-        io::{Reader, Writer},
-        ron, AssetLoader, AsyncReadExt, LoadContext,
+        io::{Reader}, AssetLoader, AsyncReadExt, LoadContext,
     },
     prelude::*,
     reflect::TypePath,
@@ -19,7 +18,7 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use pdbtbx::{open_mmcif_raw, open_pdb_raw, PDBError, TransformationMatrix, PDB};
+use pdbtbx::{open_mmcif_raw, PDBError, TransformationMatrix, PDB};
 
 use crate::polypeptide_plane::PolypeptidePlane;
 use crate::polypeptide_planes::PolypeptidePlanes;

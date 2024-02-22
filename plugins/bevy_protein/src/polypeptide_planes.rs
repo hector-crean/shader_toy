@@ -1,23 +1,3 @@
-use bevy::render::mesh::Indices;
-use bevy::render::render_asset::RenderAssetUsages;
-use bevy::render::render_resource::PrimitiveTopology;
-use bevy::{
-    app::{Plugin, Startup, Update},
-    asset::{AssetApp, AssetServer, Assets, Handle},
-    ecs::{
-        change_detection::DetectChanges,
-        system::{Command, Commands, In, Res, ResMut, Resource},
-    },
-    math::{
-        cubic_splines::{CubicBSpline, CubicBezier, CubicGenerator, *},
-        primitives::Plane3d,
-        Vec3,
-    },
-    pbr::{MaterialMeshBundle, StandardMaterial},
-    render::{color::Color, mesh::Mesh},
-    transform::components::Transform,
-    utils::default,
-};
 use bevy_geometry::TangentSpace;
 
 use crate::polypeptide_plane::PolypeptidePlane;

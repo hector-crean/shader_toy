@@ -1,5 +1,5 @@
 use bevy::{
-    pbr::{ExtendedMaterial, MaterialExtension, OpaqueRendererMethod},
+    pbr::{MaterialExtension},
     prelude::*,
     render::render_resource::*,
 };

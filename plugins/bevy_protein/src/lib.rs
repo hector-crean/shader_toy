@@ -3,26 +3,19 @@ pub mod polypeptide_planes;
 pub mod protein_asset_loader;
 
 use bevy::{
-    app::{Plugin, Startup, Update},
-    asset::{processor::LoadTransformAndSave, AssetApp, AssetEvent, AssetServer, Assets, Handle},
+    app::{Plugin, Update},
+    asset::{AssetApp, AssetEvent, Assets},
     ecs::{
-        change_detection::DetectChanges,
         event::EventReader,
-        system::{Command, Commands, In, Res, ResMut, Resource},
+        system::{Commands, ResMut},
     },
     log::info,
-    math::{
-        cubic_splines::{CubicBSpline, CubicBezier, CubicGenerator, *},
-        primitives::Plane3d,
-        Vec3,
-    },
-    pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
+    pbr::{PbrBundle, StandardMaterial},
     render::{color::Color, mesh::Mesh},
-    transform::components::Transform,
     utils::default,
 };
 use bevy_geometry::primitives::ribbon::Ribbon;
-use polypeptide_planes::PolypeptidePlanes;
+
 use protein_asset_loader::{ProteinAsset, ProteinAssetLoader};
 
 pub struct ProteinPlugin;

@@ -2,32 +2,21 @@ pub mod light_rig;
 pub mod material;
 pub mod state;
 
-use std::f32::consts::PI;
+
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     pbr::ExtendedMaterial,
     prelude::*,
-    reflect::TypePath,
-    render::{
-        render_asset::RenderAssetUsages,
-        render_resource::{
-            AsBindGroup, Extent3d, ShaderRef, TextureDimension, TextureFormat, TextureUsages,
-        },
-    },
-    window::PresentMode,
 };
 use bevy_asset_loader::prelude::*;
 use bevy_cameras::{
     pan_orbit_camera::{OrbitCameraController, OrbitCameraControllerPlugin},
-    CameraMode,
 };
 use bevy_mod_picking::{
     debug::DebugPickingPlugin, prelude::low_latency_window_plugin, DefaultPickingPlugins,
 };
 use bevy_protein::{
-    polypeptide_plane::{PolypeptidePlane, PolypeptidePlaneError},
-    polypeptide_planes::PolypeptidePlanes,
     protein_asset_loader::ProteinAsset,
     ProteinPlugin,
 };
@@ -35,7 +24,6 @@ use light_rig::LightRigPlugin;
 use material::{
     custom_material::CustomMaterial,
     extended_marerial::MyExtension,
-    game_of_life::{GameOfLifeComputePlugin, GameOfLifeImage},
 };
 use pdbtbx::*;
 use state::camera::CameraModeImpl;
@@ -72,7 +60,7 @@ impl Plugin for AppPlugin {
                 .disable::<DebugPickingPlugin>(),
             OrbitCameraControllerPlugin::<CameraModeImpl>::default(),
             LogDiagnosticsPlugin::default(),
-            FrameTimeDiagnosticsPlugin::default(),
+            FrameTimeDiagnosticsPlugin,
             MaterialPlugin::<CustomMaterial>::default(),
             MaterialPlugin::<ExtendedMaterial<StandardMaterial, MyExtension>>::default(),
             ProteinPlugin,

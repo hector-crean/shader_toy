@@ -2,7 +2,7 @@
 * Work out the bezier etc. through the polypeptide backbone
 
 */
-use bevy::math::{cubic_splines::*, vec2, Vec3};
+use bevy::math::Vec3;
 use bevy_geometry::TangentSpace;
 use pdbtbx::*;
 
@@ -82,23 +82,5 @@ impl TryFrom<(Residue, Residue, Residue)> for PolypeptidePlane {
         let polypeptide_plane = Self::new(r1, r2, r3, p, c, a, d);
 
         Ok(polypeptide_plane)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let control_points = [
-            vec2(-1.0, -20.0),
-            vec2(3.0, 2.0),
-            vec2(5.0, 3.0),
-            vec2(9.0, 8.0),
-        ];
-        let b_spline = CubicBSpline::new(control_points).to_curve();
-
-        let positions: Vec<_> = b_spline.iter_positions(100).collect();
     }
 }

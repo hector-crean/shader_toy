@@ -29,6 +29,12 @@ pub struct DefaultCameraRig {
     cameras: Vec<Entity>,
 }
 
+impl Default for DefaultCameraRig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefaultCameraRig {
     pub fn new() -> Self {
         Self {
