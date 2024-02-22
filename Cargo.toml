@@ -1,8 +1,12 @@
 [workspace]
 resolver = "2"
 edition = "2021"
-members = ["app", "plugins/*"]
+members = ["app", "plugins/*", "parsers/*"]
 
 
 [workspace.dependencies]
 bevy = { version = "0.13" }
+thiserror = "1.0.57"
+serde = { version = "1.0.197", features=["derive"]}
+bevy_asset_loader = "0.20.0"
+pdbtbx = { path =  './crates/pdbtbx'}

@@ -1,0 +1,29 @@
+# Ignore compiled files
+/target/
+
+# Ignore Cargo.lock file
+Cargo.lock
+
+# Ignore generated documentation
+/doc/
+
+# Ignore any local configuration files
+/.idea/
+.vscode/
+
+# Ignore binary files, executables, and libraries
+*.rs.bk
+*.rlib
+*.so
+*.rlib
+*.dll
+*.dylib
+*.exe
+*.pexe
+
+# Ignore hidden files and directories
+.*
+!.gitignore
+
+# Ignore temporary files
+*~
