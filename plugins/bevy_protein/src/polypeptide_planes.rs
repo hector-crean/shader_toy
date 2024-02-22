@@ -3,7 +3,7 @@ use bevy_geometry::TangentSpace;
 use crate::polypeptide_plane::PolypeptidePlane;
 
 #[derive(Default, Debug, serde::Deserialize, serde::Serialize)]
-pub struct PolypeptidePlanes(Vec<PolypeptidePlane>);
+pub struct PolypeptidePlanes(pub Vec<PolypeptidePlane>);
 
 impl From<Vec<PolypeptidePlane>> for PolypeptidePlanes {
     fn from(value: Vec<PolypeptidePlane>) -> Self {

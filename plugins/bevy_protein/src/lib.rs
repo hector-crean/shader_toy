@@ -53,20 +53,35 @@ impl ProteinPlugin {
                         Some(ProteinAsset {
                             polypeptide_planes, ..
                         }) => {
-                            let discrete_geodesic = polypeptide_planes.discrete_tangent_spaces();
-                            let ribbon = Ribbon::new(discrete_geodesic, 1., 1., 10000);
+                            for plane_triptyc in polypeptide_planes.0.windows(8) {
+                                //we need at least 4 controls points
+                                let discrete_geodesic = vec![
+                                    plane_triptyc[0].tangent_space,
+                                    plane_triptyc[1].tangent_space,
+                                    plane_triptyc[2].tangent_space,
+                                    plane_triptyc[3].tangent_space,
+                                    plane_triptyc[4].tangent_space,
+                                    plane_triptyc[5].tangent_space,
+                                    plane_triptyc[6].tangent_space,
+                                    plane_triptyc[7].tangent_space,
+                                ];
 
-                            let ribbon_mesh_handle = meshes.add(ribbon);
+                                info!("{:?}", &discrete_geodesic);
 
-                            // Render the mesh with the custom texture using a PbrBundle, add the marker.
-                            commands.spawn((PbrBundle {
-                                mesh: ribbon_mesh_handle,
-                                material: materials.add(StandardMaterial {
-                                    base_color: Color::RED,
+                                let ribbon = Ribbon::new(discrete_geodesic, 1., 1., 50);
+
+                                let ribbon_mesh_handle = meshes.add(ribbon);
+
+                                // Render the mesh with the custom texture using a PbrBundle, add the marker.
+                                commands.spawn((PbrBundle {
+                                    mesh: ribbon_mesh_handle,
+                                    material: materials.add(StandardMaterial {
+                                        base_color: Color::RED,
+                                        ..default()
+                                    }),
                                     ..default()
-                                }),
-                                ..default()
-                            },));
+                                },));
+                            }
                         }
                         None => {}
                     }

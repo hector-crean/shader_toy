@@ -1,5 +1,6 @@
 use crate::{ContinousGeodesic, F32Range, TangentSpace};
-use bevy::log::{info};
+use bevy::log::info;
+use bevy::math::cubic_splines::CubicHermite;
 use bevy::prelude::CubicGenerator;
 use bevy::{
     math::{
@@ -53,13 +54,19 @@ impl Ribbon {
     }
 
     fn position_interpolator(&self) -> CubicCurve<Vec3> {
-        let points: Vec<Vec3> = self
+        let positions: Vec<Vec3> = self
             .discrete_geodesic
             .iter()
             .map(|space| space.position)
             .collect();
 
-        CubicBSpline::new(points).to_curve()
+        let tangents: Vec<Vec3> = self
+            .discrete_geodesic
+            .iter()
+            .map(|space| space.tangent)
+            .collect();
+
+        CubicBSpline::new(positions).to_curve()
     }
     fn normal_interpolator(&self) -> CubicCurve<Vec3> {
         let points: Vec<Vec3> = self
@@ -97,6 +104,7 @@ impl Ribbon {
 pub struct RibbonMeshBuilder {
     /// The [`Ribbon`] shape.
     pub ribbon: Ribbon,
+    pub number_control_points: usize,
     pub segments: u32,
     pub position_interpolator: CubicCurve<Vec3>,
     pub tangent_interpolator: CubicCurve<Vec3>,
@@ -145,13 +153,17 @@ impl RibbonMeshBuilder {
         segments: u32,
     ) -> Self {
         let ribbon = Ribbon::new(discrete_geodesic, width, thickness, segments);
+
         let position_interpolator = ribbon.position_interpolator();
         let tangent_interpolator = ribbon.tangent_interpolator();
         let normal_interpolator = ribbon.normal_interpolator();
         let binormal_interpolator = ribbon.binormal_interpolator();
 
+        let number_control_points = ribbon.discrete_geodesic.len();
+
         Self {
             ribbon,
+            number_control_points,
             segments,
             position_interpolator,
             tangent_interpolator,
@@ -172,21 +184,19 @@ impl RibbonMeshBuilder {
     pub fn build(&self) -> Mesh {
         // parametric value t representing length along geodesic. Here t: [0, number_control_points - 3],
         // where t can be a f32
-
-        let T = self.ribbon.discrete_geodesic.len() as f32 - 3.;
-        let geodesic_length = T.clamp(0., f32::MAX);
+        let T = self.number_control_points;
 
         let mut positions = Vec::<Vec3>::new();
         let mut normals = Vec::<Vec3>::new();
         let uvs = Vec::<Vec3>::new();
         let mut indices = Vec::<u32>::new();
 
-        let dt = geodesic_length / (self.segments as f32);
+        let dt = T as f32 / (self.segments as f32);
 
-        for (idx, t) in F32Range::new(0., geodesic_length, dt).enumerate() {
+        // let t = i as f32 / N_SAMPLES as f32; // Check along entire length
+
+        for (idx, t) in F32Range::new(0., T as f32, dt).enumerate() {
             let idx = idx as u32;
-
-            info!("idx: {:?}, t: {:?}", idx, t);
 
             let p_1 = self.position_fn(t);
             let n_1 = self.normal_fn(t);

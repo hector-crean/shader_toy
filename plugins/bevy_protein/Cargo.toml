@@ -12,3 +12,4 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 bevy_asset_loader = { workspace = true }
 bevy_geometry = { path = '../bevy_geometry' }
+bevy_mod_picking = { workspace = true }
