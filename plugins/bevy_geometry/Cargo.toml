@@ -6,3 +6,10 @@ edition = "2021"
 [dependencies]
 bevy = { workspace = true }
 serde = { workspace = true }
+
+
+# truck-geometry = "0.4"
+# truck-polymesh = "0.5"
+# truck-meshalgo = "0.3"
+# truck-modeling = "0.5.1"
+# truck-shapeops = "0.3.0"

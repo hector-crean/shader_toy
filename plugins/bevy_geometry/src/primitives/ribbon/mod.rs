@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{ContinousGeodesic, F32Range, TangentSpace};
 use bevy::log::info;
 use bevy::math::cubic_splines::CubicHermite;
@@ -20,6 +22,10 @@ pub struct Ribbon {
     width: f32,
     thickness: f32,
     discrete_geodesic: Vec<TangentSpace>,
+    //over what range of points of the discrete geodesic is the ribbon defined? Often this will be [0..number_control_points],
+    //but may be a subset. If we want to align several ribbons together, it makes sense to give them the same discrete
+    //geodesic, and define them over different t_domains
+    t_domain: Range<usize>,
     segments: u32,
 }
 
@@ -28,8 +34,10 @@ impl Primitive3d for Ribbon {}
 impl Default for Ribbon {
     /// Returns the default [`Ribbon`] with a radius of `0.5`.
     fn default() -> Self {
+        let discrete_geodesic = vec![];
         Self {
-            discrete_geodesic: vec![],
+            discrete_geodesic,
+            t_domain: Range { start: 0, end: 0 },
             width: 1.,
             thickness: 0.5,
             segments: 32,
@@ -39,17 +47,19 @@ impl Default for Ribbon {
 
 impl Ribbon {
     /// Create a new [`Ribbon`] from a `radius`
-    pub const fn new(
-        discrete_geodesic: Vec<TangentSpace>,
+    pub fn new(
+        discrete_geodesic: &[TangentSpace],
+        t_domain: Range<usize>,
         width: f32,
         thickness: f32,
         segments: u32,
     ) -> Self {
         Self {
-            discrete_geodesic,
+            discrete_geodesic: discrete_geodesic.to_vec(),
             width,
             thickness,
             segments,
+            t_domain,
         }
     }
 
@@ -60,11 +70,7 @@ impl Ribbon {
             .map(|space| space.position)
             .collect();
 
-        let tangents: Vec<Vec3> = self
-            .discrete_geodesic
-            .iter()
-            .map(|space| space.tangent)
-            .collect();
+       
 
         CubicBSpline::new(positions).to_curve()
     }
@@ -104,7 +110,6 @@ impl Ribbon {
 pub struct RibbonMeshBuilder {
     /// The [`Ribbon`] shape.
     pub ribbon: Ribbon,
-    pub number_control_points: usize,
     pub segments: u32,
     pub position_interpolator: CubicCurve<Vec3>,
     pub tangent_interpolator: CubicCurve<Vec3>,
@@ -127,43 +132,26 @@ impl ContinousGeodesic for RibbonMeshBuilder {
     }
 }
 
-// impl Default for RibbonMeshBuilder {
-//     fn default() -> Self {
-//         let default_interpolator = CubicBSpline::new([Vec3::NEG_ONE, Vec3::ONE]).to_curve();
-
-//         Self {
-//             ribbon: Ribbon::default(),
-//             segments: 1,
-//             position_interpolator: default_interpolator.clone(),
-//             tangent_interpolator: default_interpolator.clone(),
-//             normal_interpolator: default_interpolator.clone(),
-//             binormal_interpolator: default_interpolator.clone(),
-//         }
-//     }
-// }
-
 impl RibbonMeshBuilder {
     /// Creates a new [`RibbonMeshBuilder`] from the given radius, a height,
     /// and a resolution used for the top and bottom.
     #[inline]
     pub fn new(
-        discrete_geodesic: Vec<TangentSpace>,
+        discrete_geodesic: &Vec<TangentSpace>,
+        t_domain: Range<usize>,
         width: f32,
         thickness: f32,
         segments: u32,
     ) -> Self {
-        let ribbon = Ribbon::new(discrete_geodesic, width, thickness, segments);
+        let ribbon = Ribbon::new(discrete_geodesic, t_domain, width, thickness, segments);
 
         let position_interpolator = ribbon.position_interpolator();
         let tangent_interpolator = ribbon.tangent_interpolator();
         let normal_interpolator = ribbon.normal_interpolator();
         let binormal_interpolator = ribbon.binormal_interpolator();
 
-        let number_control_points = ribbon.discrete_geodesic.len();
-
         Self {
             ribbon,
-            number_control_points,
             segments,
             position_interpolator,
             tangent_interpolator,
@@ -184,19 +172,21 @@ impl RibbonMeshBuilder {
     pub fn build(&self) -> Mesh {
         // parametric value t representing length along geodesic. Here t: [0, number_control_points - 3],
         // where t can be a f32
-        let T = self.number_control_points;
 
         let mut positions = Vec::<Vec3>::new();
         let mut normals = Vec::<Vec3>::new();
         let uvs = Vec::<Vec3>::new();
         let mut indices = Vec::<u32>::new();
 
-        let dt = T as f32 / (self.segments as f32);
+        let dt =
+            (self.ribbon.t_domain.end - self.ribbon.t_domain.start) as f32 / (self.segments as f32);
 
         // let t = i as f32 / N_SAMPLES as f32; // Check along entire length
 
-        for (idx, t) in F32Range::new(0., T as f32, dt).enumerate() {
+        for (idx, t) in F32Range::new(0., self.ribbon.t_domain.end as f32, dt).enumerate() {
             let idx = idx as u32;
+
+            //We have some discontinuities in the normals. Need to smooth them....
 
             let p_1 = self.position_fn(t);
             let n_1 = self.normal_fn(t);
@@ -248,7 +238,8 @@ impl Meshable for Ribbon {
 
     fn mesh(&self) -> Self::Output {
         RibbonMeshBuilder::new(
-            self.discrete_geodesic.clone(),
+            &self.discrete_geodesic,
+            self.t_domain.clone(),
             self.width,
             self.thickness,
             self.segments,
