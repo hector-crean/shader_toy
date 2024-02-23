@@ -13,3 +13,4 @@ bevy_protein = { path = "../plugins/bevy_protein" }
 pdbtbx = { workspace = true }
 bevy_panorbit_camera = "0.14"
 bevy_mod_picking = { workspace = true }
+bevy_instanced = { path = "../plugins/bevy_instanced" }

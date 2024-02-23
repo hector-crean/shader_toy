@@ -1,36 +1,30 @@
 pub mod light_rig;
 pub mod material;
 pub mod state;
-
-
+use bevy_mod_picking::prelude::*;
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    math::vec4,
     pbr::ExtendedMaterial,
     prelude::*,
 };
 use bevy_asset_loader::prelude::*;
-use bevy_cameras::{
-    pan_orbit_camera::{OrbitCameraController, OrbitCameraControllerPlugin},
-};
+use bevy_cameras::pan_orbit_camera::{OrbitCameraController, OrbitCameraControllerPlugin};
 use bevy_mod_picking::{
     debug::DebugPickingPlugin, prelude::low_latency_window_plugin, DefaultPickingPlugins,
 };
-use bevy_protein::{
-    protein_asset_loader::ProteinAsset,
-    ProteinPlugin,
-};
+use bevy_protein::{protein_asset_loader::ProteinAsset, ProteinPlugin};
 use light_rig::LightRigPlugin;
-use material::{
-    custom_material::CustomMaterial,
-    extended_marerial::MyExtension,
-};
+use material::{custom_material::CustomMaterial, extended_marerial::MyExtension};
 use pdbtbx::*;
 use state::camera::CameraModeImpl;
 
+use bevy_instanced::plugin::InstancedMaterialPlugin;
+
 #[derive(AssetCollection, Resource)]
 struct ProteinAssetsMap {
-    #[asset(path = "pdbs/AF-A0A7K5PA91-F1-model_v4.cif")]
+    #[asset(path = "pdbs/AF-A0A2K5XT84-F1-model_v4.cif")]
     primary_protein: Handle<ProteinAsset>,
 }
 
@@ -72,7 +66,10 @@ impl Plugin for AppPlugin {
                 .continue_to_state(AppState::Main)
                 .load_collection::<ProteinAssetsMap>(),
         )
-        .add_systems(OnEnter(AppState::Main), (Self::setup_camera,).chain());
+        .add_systems(
+            OnEnter(AppState::Main),
+            (Self::setup_camera, make_pickable).chain(),
+        );
     }
 }
 
@@ -86,15 +83,6 @@ impl AppPlugin {
     }
 }
 
-#[derive(Component)]
-struct Rotate;
-
-fn rotate_things(mut q: Query<&mut Transform, With<Rotate>>, time: Res<Time>) {
-    for mut t in &mut q {
-        t.rotate_y(time.delta_seconds());
-    }
-}
-
 // Generic system that takes a component as a parameter, and will despawn all entities with that component
 fn cleanup<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
     for entity in &to_despawn {
@@ -102,18 +90,29 @@ fn cleanup<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Comma
     }
 }
 
-fn print_resources(world: &World) {
-    let components = world.components();
-
-    let mut r: Vec<_> = world
-        .storages()
-        .resources
-        .iter()
-        .map(|(id, _)| components.get_info(id).unwrap())
-        .map(|info| info.name())
-        .collect();
-
-    // sort list alphebetically
-    r.sort();
-    r.iter().for_each(|name| info!("{}", name));
+/// Makes everything in the scene with a mesh pickable
+fn make_pickable(
+    mut commands: Commands,
+    meshes: Query<Entity, (With<Handle<Mesh>>, Without<Pickable>)>,
+) {
+    for entity in meshes.iter() {
+        commands
+            .entity(entity)
+            .insert((PickableBundle::default(), HIGHLIGHT_TINT.clone()));
+    }
 }
+
+const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
+    hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + Color::rgba(-0.2, -0.2, 0.4, 0.0),
+        ..matl.to_owned()
+    })),
+    pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + Color::rgba(-0.3, -0.3, 0.5, 0.0),
+        ..matl.to_owned()
+    })),
+    selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + Color::rgba(-0.3, 0.2, -0.3, 0.0),
+        ..matl.to_owned()
+    })),
+};
