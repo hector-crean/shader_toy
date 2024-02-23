@@ -1,0 +1,9 @@
+[package]
+name = "bevy_instanced"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { workspace = true }
+bytemuck = "1.14.3"
+itertools = "0.12.1"
