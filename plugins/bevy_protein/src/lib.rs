@@ -1,6 +1,11 @@
-pub mod polypeptide_plane;
-pub mod polypeptide_planes;
+pub mod atom;
+pub mod bonds;
+pub mod polypeptide;
 pub mod protein_asset_loader;
+
+use polypeptide::{polypeptide_plane, polypeptide_planes};
+
+use std::ops::Range;
 
 use bevy::{
     app::{Plugin, Update},
@@ -10,19 +15,27 @@ use bevy::{
         system::{Commands, ResMut},
     },
     log::info,
+    math::{primitives::Sphere, Vec3},
     pbr::{PbrBundle, StandardMaterial},
-    render::{color::Color, mesh::Mesh},
+    prelude::SpatialBundle,
+    render::{color::Color, mesh::Mesh, view::NoFrustumCulling},
     utils::default,
 };
 use bevy_geometry::primitives::ribbon::Ribbon;
 
+use crate::atom::Atom;
+use bevy_instanced::{
+    instance_data::cpu_instanced::{CpuInstance, CpuInstancesData},
+    plugin::InstancedMaterialPlugin,
+};
 use protein_asset_loader::{ProteinAsset, ProteinAssetLoader};
 
 pub struct ProteinPlugin;
 
 impl Plugin for ProteinPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_asset::<ProteinAsset>()
+        app.add_plugins(InstancedMaterialPlugin::<StandardMaterial>::default())
+            .init_asset::<ProteinAsset>()
             .register_asset_loader(ProteinAssetLoader)
             // .register_asset_processor::<LoadTransformAndSave<CifAssetLoader, CifAssetTransformer, ProteinAssetSaver>>(
             //     LoadTransformAndSave::new(CifAssetTransformer, ProteinAssetSaver),
@@ -51,37 +64,68 @@ impl ProteinPlugin {
 
                     match protein_asset {
                         Some(ProteinAsset {
-                            polypeptide_planes, ..
+                            polypeptide_planes,
+                            pdb,
                         }) => {
-                            for plane_triptyc in polypeptide_planes.0.windows(8) {
-                                //we need at least 4 controls points
-                                let discrete_geodesic = vec![
-                                    plane_triptyc[0].tangent_space,
-                                    plane_triptyc[1].tangent_space,
-                                    plane_triptyc[2].tangent_space,
-                                    plane_triptyc[3].tangent_space,
-                                    plane_triptyc[4].tangent_space,
-                                    plane_triptyc[5].tangent_space,
-                                    plane_triptyc[6].tangent_space,
-                                    plane_triptyc[7].tangent_space,
-                                ];
+                            // for atom in pdb.atoms() {
+                            //     Atom::new(atom).spawn(&mut commands, &mut meshes, &mut materials);
+                            // }
 
-                                info!("{:?}", &discrete_geodesic);
+                            commands.spawn((
+                                meshes.add(Sphere::new(0.5)),
+                                SpatialBundle::INHERITED_IDENTITY,
+                                CpuInstancesData::new(
+                                    pdb.atoms()
+                                        .map(|atom| {
+                                            let (x, y, z) = atom.pos();
+                                            CpuInstance::new(
+                                                Vec3::new(x as f32, y as f32, z as f32),
+                                                1.0,
+                                                Color::BLUE.as_rgba_f32(),
+                                            )
+                                        })
+                                        .collect(),
+                                ),
+                                // NOTE: Frustum culling is done based on the Aabb of the Mesh and the GlobalTransform.
+                                // As the cube is at the origin, if its Aabb moves outside the view frustum, all the
+                                // instanced cubes will be culled.
+                                // The InstanceMaterialData contains the 'GlobalTransform' information for this custom
+                                // instancing, and that is not taken into account with the built-in frustum culling.
+                                // We must disable the built-in frustum culling by adding the `NoFrustumCulling` marker
+                                // component to avoid incorrect culling.
+                                NoFrustumCulling,
+                            ));
 
-                                let ribbon = Ribbon::new(discrete_geodesic, 1., 1., 50);
+                            let discrete_geodesic = polypeptide_planes
+                                .0
+                                .iter()
+                                .map(|plane| plane.tangent_space)
+                                .collect::<Vec<_>>();
 
-                                let ribbon_mesh_handle = meshes.add(ribbon);
+                            let t_domain = Range {
+                                start: 0,
+                                end: discrete_geodesic.len(),
+                            };
 
-                                // Render the mesh with the custom texture using a PbrBundle, add the marker.
-                                commands.spawn((PbrBundle {
-                                    mesh: ribbon_mesh_handle,
-                                    material: materials.add(StandardMaterial {
-                                        base_color: Color::RED,
-                                        ..default()
-                                    }),
+                            let ribbon = Ribbon::new(
+                                &discrete_geodesic,
+                                t_domain,
+                                5.,
+                                1.,
+                                discrete_geodesic.len() as u32 * 10 as u32,
+                            );
+
+                            let ribbon_mesh_handle = meshes.add(ribbon);
+
+                            // Render the mesh with the custom texture using a PbrBundle, add the marker.
+                            commands.spawn((PbrBundle {
+                                mesh: ribbon_mesh_handle,
+                                material: materials.add(StandardMaterial {
+                                    base_color: Color::RED,
                                     ..default()
-                                },));
-                            }
+                                }),
+                                ..default()
+                            },));
                         }
                         None => {}
                     }

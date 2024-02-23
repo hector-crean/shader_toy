@@ -13,3 +13,7 @@ serde = { workspace = true }
 bevy_asset_loader = { workspace = true }
 bevy_geometry = { path = '../bevy_geometry' }
 bevy_mod_picking = { workspace = true }
+bevy_instanced = { path = "../bevy_instanced" }
+
+
+periodic-table-on-an-enum = "0.3.2"

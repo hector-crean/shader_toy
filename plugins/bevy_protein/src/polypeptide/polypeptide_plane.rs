@@ -12,6 +12,7 @@ pub struct PolypeptidePlane {
     pub r2: Residue,
     pub r3: Residue,
     pub tangent_space: TangentSpace,
+    pub width: f32,
 }
 
 impl PolypeptidePlane {
@@ -23,12 +24,14 @@ impl PolypeptidePlane {
         normal: Vec3,
         tangent: Vec3,
         binormal: Vec3,
+        width: f32,
     ) -> Self {
         Self {
             r1,
             r2,
             r3,
             tangent_space: TangentSpace::new(position, normal, tangent, binormal),
+            width,
         }
     }
 }
@@ -68,6 +71,7 @@ impl TryFrom<(Residue, Residue, Residue)> for PolypeptidePlane {
         //tangent
         let a = (ca2_position - ca1_position).normalize();
 
+        let width = (o_position - ca1_position).length();
         let b = (o_position - ca1_position).normalize();
 
         //normal
@@ -79,7 +83,7 @@ impl TryFrom<(Residue, Residue, Residue)> for PolypeptidePlane {
         //plane_centre
         let p = 0.5 * (ca1_position + ca2_position);
 
-        let polypeptide_plane = Self::new(r1, r2, r3, p, c, a, d);
+        let polypeptide_plane = Self::new(r1, r2, r3, p, c, a, d, width);
 
         Ok(polypeptide_plane)
     }
