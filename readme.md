@@ -14,3 +14,5 @@ Refs:
 - https://github.com/ForesightMiningSoftwareCorporation/bevy_aabb_instancing/tree/main
 
 Do we want the render resource to be global (i.e. as a Resource), or entity specific (i.e. as a Component)
+
+Morton codes for chunked voxel data

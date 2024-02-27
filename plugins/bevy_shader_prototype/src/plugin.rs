@@ -13,7 +13,7 @@ use bevy::{
     },
     window::WindowPlugin,
 };
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 pub struct ShaderPrototypePlugin;
 
@@ -54,12 +54,17 @@ impl Plugin for ShaderPrototypePlugin {
     }
 }
 
+
+
 // Bindings
 #[derive(Resource, Clone, Deref, ExtractResource, AsBindGroup)]
 struct GameOfLifeImage {
     #[storage_texture(0, image_format = Rgba8Unorm, access = ReadWrite)]
     texture: Handle<Image>,
 }
+
+
+
 
 #[derive(Resource)]
 struct GameOfLifeImageBindGroup(BindGroup);
@@ -91,7 +96,10 @@ struct PostProcessSettings {
     _webgl2_padding: Vec3,
 }
 
-struct PostProcessSettingsBindGroup(BindGroup);
+struct PostProcessSettingsBindGroup<T> {
+    pub value: BindGroup,
+    _marker: PhantomData<T>
+}
 
 impl PostProcessSettingsBindGroup {
     fn prepare(
@@ -129,6 +137,10 @@ impl PostProcessSettingsBindGroup {
         Ok(())
     }
 }
+
+
+pub struct SetPostProcessBindGroup
+
 
 // Pipelines :
 
