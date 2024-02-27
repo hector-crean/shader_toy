@@ -26,11 +26,11 @@ use bevy::{
 };
 
 use crate::{
-    instance_data::{cpu_instanced::CpuInstancesData, gpu_instanced::GpuInstancesData},
     render::{
-        render_pipeline::{queue_instanced_material, DrawInstanced, InstancedRenderPipeline},
+        render_pipeline::{queue_instanced_material, DrawPointcloud, PointcloudRenderPipeline},
         shaders::load_instancing_shaders,
     },
+    uniforms::{cpu_instanced::InstancesData, gpu_instanced::GpuInstancesData},
     util::InternalShaders,
 };
 
@@ -44,11 +44,11 @@ where
     M::Data: PartialEq + Eq + Hash + Clone,
 {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ExtractComponentPlugin::<CpuInstancesData>::default())
+        app.add_plugins(ExtractComponentPlugin::<InstancesData>::default())
             .init_resource::<InternalShaders>();
         app.sub_app_mut(RenderApp)
-            .add_render_command::<Transparent3d, DrawInstanced<M>>()
-            .init_resource::<SpecializedMeshPipelines<InstancedRenderPipeline<M>>>()
+            .add_render_command::<Transparent3d, DrawPointcloud<M>>()
+            .init_resource::<SpecializedMeshPipelines<PointcloudRenderPipeline<M>>>()
             .add_systems(
                 Render,
                 (
@@ -62,6 +62,6 @@ where
         load_instancing_shaders(app);
 
         app.sub_app_mut(RenderApp)
-            .init_resource::<InstancedRenderPipeline<M>>();
+            .init_resource::<PointcloudRenderPipeline<M>>();
     }
 }

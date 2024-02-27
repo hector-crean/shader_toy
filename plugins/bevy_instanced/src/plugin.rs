@@ -2,31 +2,15 @@ use std::{hash::Hash, marker::PhantomData};
 
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
-    ecs::{
-        query::QueryItem,
-        system::{lifetimeless::*, SystemParamItem},
-    },
-    pbr::{
-        MeshPipeline, MeshPipelineKey, RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
-    },
     prelude::*,
     render::{
-        extract_component::{ExtractComponent, ExtractComponentPlugin},
-        mesh::{GpuBufferInfo, MeshVertexBufferLayout},
-        render_asset::RenderAssets,
-        render_phase::{
-            AddRenderCommand, DrawFunctions, PhaseItem, RenderCommand, RenderCommandResult,
-            RenderPhase, SetItemPipeline, TrackedRenderPass,
-        },
-        render_resource::*,
-        renderer::RenderDevice,
-        view::{ExtractedView, NoFrustumCulling},
-        Render, RenderApp, RenderSet,
+        extract_component::ExtractComponentPlugin, render_phase::AddRenderCommand,
+        render_resource::*, Render, RenderApp, RenderSet,
     },
 };
 
 use crate::{
-    instance_data::{cpu_instanced::CpuInstancesData, gpu_instanced::GpuInstancesData},
+    instance_data::{gpu_instanced::GpuInstancesData, instanced::InstancesData},
     render::{
         render_pipeline::{queue_instanced_material, DrawInstanced, InstancedRenderPipeline},
         shaders::load_instancing_shaders,
@@ -44,7 +28,7 @@ where
     M::Data: PartialEq + Eq + Hash + Clone,
 {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ExtractComponentPlugin::<CpuInstancesData>::default())
+        app.add_plugins(ExtractComponentPlugin::<InstancesData>::default())
             .init_resource::<InternalShaders>();
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawInstanced<M>>()

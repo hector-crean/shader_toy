@@ -1,4 +1,3 @@
-pub mod bind_group;
-pub mod compute_pipeline;
-pub mod render_pipeline;
+pub mod pipelines;
+pub mod render_graph;
 pub mod shaders;

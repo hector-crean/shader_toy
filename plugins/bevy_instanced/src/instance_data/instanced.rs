@@ -1,20 +1,20 @@
 use bevy::{
     core::{Pod, Zeroable},
     ecs::{component::Component, query::QueryItem},
-    math::{Vec3, Vec4},
+    math::Vec3,
     prelude::Deref,
     render::extract_component::ExtractComponent,
 };
 
 #[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
-pub struct CpuInstance {
+pub struct Instance {
     position: Vec3,
     scale: f32,
     color: [f32; 4],
 }
 
-impl CpuInstance {
+impl Instance {
     pub fn new(position: Vec3, scale: f32, color: [f32; 4]) -> Self {
         Self {
             position,
@@ -25,23 +25,23 @@ impl CpuInstance {
 }
 
 #[derive(Component, Deref)]
-pub struct CpuInstancesData {
-    pub data: Vec<CpuInstance>,
+pub struct InstancesData {
+    pub data: Vec<Instance>,
 }
 
-impl CpuInstancesData {
-    pub fn new(data: Vec<CpuInstance>) -> Self {
+impl InstancesData {
+    pub fn new(data: Vec<Instance>) -> Self {
         Self { data }
     }
 }
 
-impl ExtractComponent for CpuInstancesData {
-    type QueryData = &'static CpuInstancesData;
+impl ExtractComponent for InstancesData {
+    type QueryData = &'static InstancesData;
     type QueryFilter = ();
     type Out = Self;
 
     fn extract_component(item: QueryItem<'_, Self::QueryData>) -> Option<Self> {
-        Some(CpuInstancesData {
+        Some(InstancesData {
             data: item.data.clone(),
         })
     }

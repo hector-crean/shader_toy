@@ -12,3 +12,6 @@ itertools = "0.12.1"
 bitflags = "2.4.2"
 strum_macros = "0.26"
 strum = { version = "0.26", features = ["derive"] }
+
+opd-parser = { version = "0.5.0" }
+las = { version = "0.8", features = ["laz"]}
