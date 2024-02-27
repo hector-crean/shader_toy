@@ -1,8 +1,12 @@
 use bevy::{
     prelude::*,
+    render::{
+        render_resource::{encase::internal::WriteInto, *},
+        renderer::{RenderDevice, RenderQueue},
+    },
 };
 use itertools::Itertools;
-
+use std::{marker::PhantomData, ops::Deref};
 
 #[derive(Default, Resource)]
 pub(crate) struct InternalShaders(Vec<Handle<Shader>>);

@@ -1,0 +1,17 @@
+[package]
+name = "bevy_compute_rasterizer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { workspace = true }
+bytemuck = "1.14.3"
+itertools = "0.12.1"
+bitflags = "2.4.2"
+strum_macros = "0.26"
+strum = { version = "0.26", features = ["derive"] }
+
+opd-parser = { version = "0.5.0" }
+las = { version = "0.8", features = ["laz"]}

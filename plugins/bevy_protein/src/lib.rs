@@ -25,7 +25,7 @@ use bevy_geometry::primitives::ribbon::Ribbon;
 
 use crate::atom::Atom;
 use bevy_instanced::{
-    instance_data::cpu_instanced::{CpuInstance, CpuInstancesData},
+    instance_data::instanced::{Instance, InstancesData},
     plugin::InstancedMaterialPlugin,
 };
 use protein_asset_loader::{ProteinAsset, ProteinAssetLoader};
@@ -74,11 +74,11 @@ impl ProteinPlugin {
                             commands.spawn((
                                 meshes.add(Sphere::new(0.5)),
                                 SpatialBundle::INHERITED_IDENTITY,
-                                CpuInstancesData::new(
+                                InstancesData::new(
                                     pdb.atoms()
                                         .map(|atom| {
                                             let (x, y, z) = atom.pos();
-                                            CpuInstance::new(
+                                            Instance::new(
                                                 Vec3::new(x as f32, y as f32, z as f32),
                                                 1.0,
                                                 Color::BLUE.as_rgba_f32(),

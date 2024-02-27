@@ -10,7 +10,7 @@ use bevy::{
     },
 };
 
-use super::cpu_instanced::CpuInstancesData;
+use super::instanced::InstancesData;
 
 #[derive(Component)]
 pub struct GpuInstancesData {
@@ -21,7 +21,7 @@ pub struct GpuInstancesData {
 impl GpuInstancesData {
     pub fn prepare(
         mut commands: Commands,
-        query: Query<(Entity, &CpuInstancesData)>,
+        query: Query<(Entity, &InstancesData)>,
         render_device: Res<RenderDevice>,
     ) {
         for (entity, instance_data) in &query {

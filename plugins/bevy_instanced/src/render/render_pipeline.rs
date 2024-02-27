@@ -4,32 +4,26 @@ use std::{hash::Hash, marker::PhantomData};
 
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
-    ecs::{
-        query::QueryItem,
-        system::{lifetimeless::*, SystemParamItem},
-    },
+    ecs::system::{lifetimeless::*, SystemParamItem},
     pbr::{
         MeshPipeline, MeshPipelineKey, RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
     },
     prelude::*,
     render::{
-        extract_component::{ExtractComponent, ExtractComponentPlugin},
         mesh::{GpuBufferInfo, MeshVertexBufferLayout},
         render_asset::RenderAssets,
         render_phase::{
-            AddRenderCommand, DrawFunctions, PhaseItem, RenderCommand, RenderCommandResult,
-            RenderPhase, SetItemPipeline, TrackedRenderPass,
+            DrawFunctions, PhaseItem, RenderCommand, RenderCommandResult, RenderPhase,
+            SetItemPipeline, TrackedRenderPass,
         },
         render_resource::*,
-        renderer::RenderDevice,
-        view::{ExtractedView, NoFrustumCulling},
-        Render, RenderApp, RenderSet,
+        view::ExtractedView,
     },
 };
 
 use crate::instance_data::{
-    cpu_instanced::{CpuInstance, CpuInstancesData},
     gpu_instanced::GpuInstancesData,
+    instanced::{Instance, InstancesData},
 };
 
 use super::shaders::DEFAULT_SHADER;
@@ -76,7 +70,7 @@ where
 
         descriptor.vertex.shader = self.shader.clone();
         descriptor.vertex.buffers.push(VertexBufferLayout {
-            array_stride: std::mem::size_of::<CpuInstance>() as u64,
+            array_stride: std::mem::size_of::<Instance>() as u64,
             step_mode: VertexStepMode::Instance,
             attributes: vec![
                 VertexAttribute {
@@ -157,7 +151,7 @@ pub fn queue_instanced_material<M: Material>(
     pipeline_cache: Res<PipelineCache>,
     meshes: Res<RenderAssets<Mesh>>,
     render_mesh_instances: Res<RenderMeshInstances>,
-    material_meshes: Query<Entity, With<CpuInstancesData>>,
+    material_meshes: Query<Entity, With<InstancesData>>,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
 ) where
     M::Data: PartialEq + Eq + Hash + Clone,

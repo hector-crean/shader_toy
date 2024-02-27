@@ -1,8 +1,8 @@
 use std::ops::Range;
 
 use crate::{ContinousGeodesic, F32Range, TangentSpace};
-use bevy::log::info;
-use bevy::math::cubic_splines::CubicHermite;
+
+
 use bevy::prelude::CubicGenerator;
 use bevy::{
     math::{
@@ -175,7 +175,7 @@ impl RibbonMeshBuilder {
 
         let mut positions = Vec::<Vec3>::new();
         let mut normals = Vec::<Vec3>::new();
-        let uvs = Vec::<Vec3>::new();
+        let _uvs = Vec::<Vec3>::new();
         let mut indices = Vec::<u32>::new();
 
         let dt =
