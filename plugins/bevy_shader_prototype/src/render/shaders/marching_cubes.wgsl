@@ -315,6 +315,11 @@ fn index_from_id(id: vec3<u32>, chunk: Chunk) -> u32 {
 @group(5) @binding(0) var<storage, read> chunk: Chunk;
 @group(5) @binding(1) var vector_field: texture_3d<f32>;
 @group(5) @binding(2) var vector_field_sampler: sampler;
+
+// @group(0) @binding(0) var texture: texture_storage_3d<r32float, read_write>;
+
+
+
 @group(5) @binding(3) var<storage, read_write> polygonised_scalar_field: PolygonisedScalarField;
 
 @compute @workgroup_size(8, 8, 8) 
