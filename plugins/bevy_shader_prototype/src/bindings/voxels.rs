@@ -47,7 +47,7 @@ pub struct Voxel {
     triangles: [Triangle; 5],
 }
 
-#[derive(Asset, Clone, TypePath, Component)]
+#[derive(Asset, Clone, TypePath, Component, Resource)]
 pub struct Voxels {
     pub voxels: Vec<Voxel>,
 }

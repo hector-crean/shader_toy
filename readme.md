@@ -5,6 +5,8 @@ render::extract_resource::ExtractResourcePlugin
 
 bevy::render::extract_component::ComponentUniforms
 
+GpuComponentArrayBufferPlugin
+
 Refs:
 
 - https://github.com/cessationoftime/bevy_plot/blob/e1a7be92615d7089aeea8244df9e580e47aaca20/src/markers/mod.rs#L334
