@@ -10,6 +10,8 @@
 #import bevy_volumetric::constants::{EDGE_TABLE, TRI_TABLE, CORNER_INDEX_A_FROM_EDGE, CORNER_INDEX_B_FROM_EDGE}
 
 
+@group(1) @binding(0) var : u32;
+
 
 struct VertexBuffer {
     data: array<vec3<f32>>,
@@ -48,6 +50,7 @@ var<storage, read_write> out_indices: IndexBuffer;
 @group(0) @binding(7)
 var<storage, read_write> out_uvs: UvBuffer;
 
+@group(5) @binding(3) var<storage, read_write> polygonised_scalar_field: PolygonisedScalarField;
 
 
 
@@ -58,12 +61,6 @@ fn index_from_id(id: vec3<u32>, chunk: Chunk) -> u32 {
 
 
 
-
-// @group(0) @binding(0) var texture: texture_storage_3d<r32float, read_write>;
-
-
-
-@group(5) @binding(3) var<storage, read_write> polygonised_scalar_field: PolygonisedScalarField;
 
 @compute @workgroup_size(8, 8, 8) 
 fn marching_cubes(

@@ -23,11 +23,15 @@ use bevy::{
         view::{ExtractedView, ViewUniforms},
         Extract, Render, RenderApp, RenderSet,
     },
-    utils::HashMap,
+    utils::hashbrown::HashMap,
     window::WindowPlugin,
 };
 use bytemuck::{Pod, Zeroable};
 use std::{borrow::Cow, marker::PhantomData, ops::Deref};
+
+use crate::VolumetricRenderingBundle;
+
+use super::bindings::{Cube, Grid, VolumetricRenderingSettings};
 
 #[derive(Clone, Resource)]
 pub struct PolygoniseMeshComputePipeline {
@@ -79,7 +83,7 @@ impl FromWorld for PolygoniseMeshComputePipeline {
             .resource::<AssetServer>()
             .load("shaders/post_processing.wgsl");
 
-        let mut pipeline_cache = world.resource_mut::<PipelineCache>();
+        let pipeline_cache = world.resource_mut::<PipelineCache>();
 
         let init_pipeline_id = pipeline_cache.queue_compute_pipeline(compute_pipeline_descriptor(
             shader.clone(),
@@ -88,7 +92,7 @@ impl FromWorld for PolygoniseMeshComputePipeline {
         ));
 
         let update_pipeline_id = pipeline_cache.queue_compute_pipeline(
-            compute_pipeline_descriptor(shader, "update", &bind_group_0_layout),
+            compute_pipeline_descriptor(shader.clone(), "update", &bind_group_0_layout),
         );
 
         Self {
@@ -107,40 +111,92 @@ enum PolygoniseMeshState {
 }
 
 pub struct PolygoniseMeshComputeNode {
-    state: PolygoniseMeshState,
+    states: HashMap<Entity, PolygoniseMeshState>,
+    volumetric_mesh_systems: QueryState<
+        Entity,
+        (
+            With<VolumetricRenderingSettings>,
+            With<Handle<Grid>>,
+            With<Handle<Image>>,
+        ),
+    >,
 }
 
-impl Default for PolygoniseMeshComputeNode {
-    fn default() -> Self {
+impl PolygoniseMeshComputeNode {
+    pub fn new(world: &mut World) -> Self {
         Self {
-            state: PolygoniseMeshState::Loading,
+            volumetric_mesh_systems: QueryState::new(world),
+            states: HashMap::default(),
         }
     }
-}
+    fn update_state(
+        &mut self,
+        entity: Entity,
+        pipeline_cache: &PipelineCache,
+        pipeline: &PolygoniseMeshComputePipeline,
+    ) {
+        let update_state = match self.states.get(&entity) {
+            Some(state) => state,
+            None => {
+                self.states.insert(entity, PolygoniseMeshState::Loading);
+                &PolygoniseMeshState::Loading
+            }
+        };
 
-impl render_graph::Node for PolygoniseMeshComputeNode {
-    fn update(&mut self, world: &mut World) {
-        let pipeline = world.resource::<PolygoniseMeshComputePipeline>();
-        let pipeline_cache = world.resource::<PipelineCache>();
-
-        // if the corresponding pipeline has loaded, transition to the next stage
-        match self.state {
+        match update_state {
             PolygoniseMeshState::Loading => {
                 if let CachedPipelineState::Ok(_) =
                     pipeline_cache.get_compute_pipeline_state(pipeline.init_pipeline_id)
                 {
-                    self.state = PolygoniseMeshState::Init;
+                    self.states.insert(entity, PolygoniseMeshState::Init);
                 }
             }
             PolygoniseMeshState::Init => {
                 if let CachedPipelineState::Ok(_) =
                     pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline_id)
                 {
-                    self.state = PolygoniseMeshState::Update;
+                    self.states.insert(entity, PolygoniseMeshState::Update);
                 }
             }
             PolygoniseMeshState::Update => {}
         }
+    }
+    pub fn run_compute_pass(
+        render_context: &mut RenderContext,
+        bind_group: &BindGroup,
+        pipeline_cache: &PipelineCache,
+        pipeline: CachedComputePipelineId,
+    ) {
+        let mut pass = render_context
+            .command_encoder()
+            .begin_compute_pass(&ComputePassDescriptor::default());
+
+        pass.set_bind_group(0, bind_group, &[]);
+
+        let pipeline = pipeline_cache.get_compute_pipeline(pipeline).unwrap();
+        pass.set_pipeline(pipeline);
+
+        pass.dispatch_workgroups(PARTICLE_COUNT / WORKGROUP_SIZE, 1, 1);
+    }
+}
+
+impl render_graph::Node for PolygoniseMeshComputeNode {
+    fn update(&mut self, world: &mut World) {
+        let mut systems = world.query_filtered::<Entity, (
+            With<VolumetricRenderingSettings>,
+            With<Handle<Grid>>,
+            With<Handle<Image>>,
+        )>();
+
+        let pipeline = world.resource::<PolygoniseMeshComputePipeline>();
+        let pipeline_cache = world.resource::<PipelineCache>();
+
+        for entity in systems.iter(world) {
+            // if the corresponding pipeline has loaded, transition to the next stage
+            self.update_state(entity, pipeline_cache, pipeline);
+        }
+        //Update the query for the run step
+        self.volumetric_mesh_systems.update_archetypes(world);
     }
 
     fn run(
@@ -149,34 +205,22 @@ impl render_graph::Node for PolygoniseMeshComputeNode {
         render_context: &mut RenderContext,
         world: &World,
     ) -> Result<(), render_graph::NodeRunError> {
-        let texture_bind_group = &world.resource::<GameOfLifeImageBindGroup>().0;
-
         let pipeline_cache = world.resource::<PipelineCache>();
         let pipeline = world.resource::<PolygoniseMeshComputePipeline>();
 
-        let mut pass = render_context
-            .command_encoder()
-            .begin_compute_pass(&ComputePassDescriptor::default());
-
-        //this is where we set the correct offset for the UniformIndexedBuffer...
-        pass.set_bind_group(0, texture_bind_group, &[]);
-
-        // select the pipeline based on the current state
-        match self.state {
-            PolygoniseMeshState::Loading => {}
-            PolygoniseMeshState::Init => {
-                let init_pipeline = pipeline_cache
-                    .get_compute_pipeline(pipeline.init_pipeline_id)
-                    .unwrap();
-                pass.set_pipeline(init_pipeline);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
-            }
-            PolygoniseMeshState::Update => {
-                let update_pipeline = pipeline_cache
-                    .get_compute_pipeline(pipeline.update_pipeline_id)
-                    .unwrap();
-                pass.set_pipeline(update_pipeline);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+        for entity in self.volumetric_mesh_systems.iter_manual(world) {
+            // select the pipeline based on the current state
+            if let Some(pipeline) = match self.states[&entity] {
+                PolygoniseMeshState::Loading => None,
+                PolygoniseMeshState::Init => Some(pipeline.init_pipeline_id),
+                PolygoniseMeshState::Update => Some(pipeline.update_pipeline_id),
+            } {
+                Self::run_compute_pass(
+                    render_context,
+                    &particle_systems_render.update_bind_group[&entity],
+                    pipeline_cache,
+                    pipeline,
+                );
             }
         }
 
